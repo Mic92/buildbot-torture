@@ -22,15 +22,16 @@
           # pushes schedule real builds instead of cache hits.
           salt = if self ? rev then self.rev else "dirty";
 
-          # Quick builds that always succeed; bulk of the 2500 attrs per
-          # system to stress the scheduler and UI, not the builders.
+          # Quick builds that always succeed; bulk of the 25000 attrs per
+          # system (Hydra-scale: nixpkgs jobset has ~25k jobs per system)
+          # to stress the scheduler and UI, not the builders.
           fast = builtins.listToAttrs (
             map (i: {
               name = "fast-${toString i}";
               value = pkgs.runCommand "fast-${toString i}" { inherit salt; } ''
                 echo "fast build ${toString i} $salt" > $out
               '';
-            }) (nixpkgs.lib.range 1 2467)
+            }) (nixpkgs.lib.range 1 24967)
           );
 
           # Builds that sleep to simulate long-running jobs
