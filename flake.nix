@@ -56,6 +56,40 @@
             }) (nixpkgs.lib.range 1 5)
           );
 
+          # Multi-phase failures: real stdenv phases (patch/configure/
+          # build) so the log viewer has phase dividers to render, then a
+          # failing buildPhase. "long" stays under the viewer's render cap.
+          phased = {
+            this-will-fail = pkgs.stdenv.mkDerivation {
+              name = "this-will-fail";
+              inherit salt;
+              dontUnpack = true;
+              buildPhase = ''
+                echo "this is a phased test failure"
+                echo "error: intentional failure in buildPhase" 1>&2
+                exit 1
+              '';
+              installPhase = "true";
+            };
+            this-will-fail-long = pkgs.stdenv.mkDerivation {
+              name = "this-will-fail-long";
+              inherit salt;
+              dontUnpack = true;
+              configurePhase = ''
+                runHook preConfigure
+                for i in $(seq 1 1500); do echo "configure: step $i of 1500"; done
+                runHook postConfigure
+              '';
+              buildPhase = ''
+                runHook preBuild
+                for i in $(seq 1 3000); do echo "build: compiling object $i of 3000"; done
+                echo "error: intentional failure after a long build log" 1>&2
+                exit 1
+              '';
+              installPhase = "true";
+            };
+          };
+
           # Builds producing huge logs to stress log rendering
           bigLog = builtins.listToAttrs (
             map (i: {
@@ -120,7 +154,7 @@
             }) (nixpkgs.lib.range 1 5)
           );
         in
-        fast // slow // fail // bigLog // chains // burn // flaky
+        fast // slow // fail // phased // bigLog // chains // burn // flaky
       );
     };
 }
