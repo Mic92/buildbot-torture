@@ -13,6 +13,7 @@
       forAllSystems = nixpkgs.lib.genAttrs systems;
     in
     {
+
       checks = forAllSystems (
         system:
         let
