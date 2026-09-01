@@ -2,10 +2,33 @@
   description = "Torture test flake for buildbot-nix UI: many builds with varied outcomes";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixbot.url = "github:Mic92/nixbot/on-event";
+  inputs.nixbot.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
-    { self, nixpkgs, ... }:
+    {
+      self,
+      nixpkgs,
+      nixbot,
+      ...
+    }:
     let
+      fxPkgs = nixpkgs.legacyPackages.x86_64-linux;
+      inherit (nixbot.lib.effects { pkgs = fxPkgs; }) mkEffect;
+      # Effects talk a lot so the effect log viewer has something to stream.
+      chatty =
+        name: seconds: extra:
+        mkEffect (
+          {
+            inherit name;
+            effectScript = ''
+              echo "event: ''${NIXBOT_EVENT_KIND:-push} actor=''${NIXBOT_ACTOR:-} pr=''${NIXBOT_PR_NUMBER:-}"
+              if [ -n "''${NIXBOT_EVENT_JSON:-}" ]; then jq . "$NIXBOT_EVENT_JSON"; fi
+              for i in $(seq 1 ${toString seconds}); do echo "${name}: step $i/${toString seconds}"; sleep 1; done
+            '';
+          }
+          // extra
+        );
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -195,9 +218,75 @@
             }) (nixpkgs.lib.range 1 5)
           );
         in
-        # Temporarily only streamingLog to test the live log view in isolation.
-        # fast // slow // fail // phased // bigLog // streamingLog // chains // burn // flaky
-        streamingLog
+        fast // slow // fail // phased // bigLog // streamingLog // chains // burn // flaky
       );
+
+      herculesCI =
+        { ... }:
+        {
+          onPush.default.outputs.effects = {
+            deploy = chatty "deploy" 30 { lock = "deploy"; };
+            # Runs after deploy, exercising `after` hold-back.
+            smoke = chatty "smoke" 5 {
+              after = [
+                [
+                  "default"
+                  "deploy"
+                ]
+              ];
+            };
+            broken = mkEffect {
+              name = "broken";
+              effectScript = ''
+                echo "about to fail" >&2
+                exit 1
+              '';
+            };
+          };
+
+          onEvent = {
+            # PR build went green: comment, share the deploy lock.
+            pull_request = {
+              plan = chatty "plan" 10 {
+                when.permission = "write";
+                lock = "deploy";
+                checkout = true;
+                effectScript = ''
+                  cd "$NIXBOT_EFFECT_CHECKOUT"
+                  {
+                    echo "### plan for $(git rev-parse --short HEAD)"
+                    echo
+                    echo '```'
+                    git log --oneline -5
+                    echo '```'
+                  } | nixbot-pr-comment --replace-marker plan
+                '';
+              };
+              needs-label = chatty "needs-label" 1 { when.labels = [ "preview" ]; };
+            };
+            comment = {
+              ping = mkEffect {
+                name = "ping";
+                when.commands = [ "ping" ];
+                effectScript = ''
+                  nixbot-pr-comment "pong $NIXBOT_COMMAND_ARGS (from $NIXBOT_ACTOR)"
+                '';
+              };
+              apply = chatty "apply" 20 {
+                when = {
+                  commands = [ "apply" ];
+                  permission = "write";
+                };
+                lock = "deploy";
+              };
+            };
+            pull_request_closed.teardown = chatty "teardown" 3 { lock = "preview-{pr}"; };
+            build_finished = {
+              always = chatty "always" 1 { };
+              broke = chatty "broke" 1 { when.transition = "broke"; };
+              fixed = chatty "fixed" 1 { when.transition = "fixed"; };
+            };
+          };
+        };
     };
 }
