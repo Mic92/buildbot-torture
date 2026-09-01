@@ -278,7 +278,7 @@
                   nixbot-pr-comment "pong $NIXBOT_COMMAND_ARGS (from $NIXBOT_ACTOR)"
                 '';
               };
-              apply = chatty "apply" 20 {
+              apply = assert builtins.throw "onEvent deliberately broken"; chatty "apply" 20 {
                 when = {
                   commands = [ "apply" ];
                   permission = "write";
