@@ -117,12 +117,12 @@
                   runHook preConfigure
                   for n in $(seq 1 60); do
                     echo "checking for feature $n... yes"
-                    sleep 0.5
+                    sleep 0.1
                   done
                   runHook postConfigure
                 '';
-                # ~10 lines/s for i*5 minutes, with a 2000-line burst every
-                # minute to mix trickle and flood.
+                # ~50 lines/s for i minutes, with a 2000-line burst every
+                # 300 steps to mix trickle and flood.
                 buildPhase = ''
                   runHook preBuild
                   total=$(( ${toString i} * 5 * 60 ))
@@ -135,7 +135,7 @@
                         echo "warning: burst $s line $k: unused variable 'x' [-Wunused-variable]" >&2
                       done
                     fi
-                    sleep 1
+                    sleep 0.2
                   done
                   runHook postBuild
                 '';
