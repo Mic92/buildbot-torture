@@ -256,6 +256,7 @@
                 when.permission = "write";
                 lock = "deploy";
                 checkout = true;
+                inputs = [ fxPkgs.git ];
                 effectScript = ''
                   cd "$NIXBOT_EFFECT_CHECKOUT"
                   {
