@@ -104,6 +104,46 @@
             }) (nixpkgs.lib.range 1 3)
           );
 
+          # Builds that emit log lines steadily over minutes so the live
+          # log view has to stream, tail and lazy-load while running.
+          streamingLog = builtins.listToAttrs (
+            map (i: {
+              name = "streaming-log-${toString i}";
+              value = pkgs.stdenv.mkDerivation {
+                name = "streaming-log-${toString i}";
+                inherit salt;
+                dontUnpack = true;
+                configurePhase = ''
+                  runHook preConfigure
+                  for n in $(seq 1 60); do
+                    echo "checking for feature $n... yes"
+                    sleep 0.5
+                  done
+                  runHook postConfigure
+                '';
+                # ~10 lines/s for i*5 minutes, with a 2000-line burst every
+                # minute to mix trickle and flood.
+                buildPhase = ''
+                  runHook preBuild
+                  total=$(( ${toString i} * 5 * 60 ))
+                  for s in $(seq 1 $total); do
+                    for k in $(seq 1 10); do
+                      echo "[$s/$total] CC object_''${s}_''${k}.o"
+                    done
+                    if [ $(( s % 60 )) -eq 0 ]; then
+                      for k in $(seq 1 2000); do
+                        echo "warning: burst $s line $k: unused variable 'x' [-Wunused-variable]" >&2
+                      done
+                    fi
+                    sleep 1
+                  done
+                  runHook postBuild
+                '';
+                installPhase = "echo done > $out";
+              };
+            }) (nixpkgs.lib.range 1 3)
+          );
+
           # Build chains to exercise dependency scheduling
           mkChain =
             name: depth:
@@ -155,7 +195,9 @@
             }) (nixpkgs.lib.range 1 5)
           );
         in
-        fast // slow // fail // phased // bigLog // chains // burn // flaky
+        # Temporarily only streamingLog to test the live log view in isolation.
+        # fast // slow // fail // phased // bigLog // streamingLog // chains // burn // flaky
+        streamingLog
       );
     };
 }
