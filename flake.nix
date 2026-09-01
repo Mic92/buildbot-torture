@@ -275,7 +275,7 @@
                 name = "ping";
                 when.commands = [ "ping" ];
                 # Deliberately broken input: the PR build must go red.
-                inputs = [ (fxPkgs.runCommand "broken-input" { } "exit 1") ];
+                inputs = [ (pkgs.runCommand "broken-input" { } "exit 1") ];
                 effectScript = ''
                   nixbot-pr-comment "pong $NIXBOT_COMMAND_ARGS (from $NIXBOT_ACTOR)"
                 '';
