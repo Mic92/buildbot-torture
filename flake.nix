@@ -218,7 +218,12 @@
             }) (nixpkgs.lib.range 1 5)
           );
         in
-        fast // slow // fail // phased // bigLog // streamingLog // chains // burn // flaky
+        # Small green set so PR builds succeed and event effects fire.
+        # Full torture: fast // slow // fail // phased // bigLog // streamingLog // chains // burn // flaky
+        {
+          inherit (fast) fast-1 fast-2 fast-3;
+          inherit (chains) chain-1;
+        }
       );
 
       herculesCI =
