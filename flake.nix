@@ -249,6 +249,11 @@
             };
           };
 
+          onSchedule.nightly = {
+            when.hour = [ 3 ];
+            outputs.effects.gc = chatty "gc" 1 { };
+          };
+
           onEvent = {
             # PR build went green: comment, share the deploy lock.
             pull_request = {
@@ -269,6 +274,8 @@
                 '';
               };
               needs-label = chatty "needs-label" 1 { when.labels = [ "preview" ]; };
+              # Only when the PR touches terraform/.
+              tf-plan = chatty "tf-plan" 1 { when.modified = [ "terraform/*" ]; };
             };
             comment = {
               ping = mkEffect {
