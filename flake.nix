@@ -227,9 +227,21 @@
       );
 
       herculesCI =
-        { ... }:
+        { primaryRepo, ... }:
         {
-          onPush.default.outputs.effects = {
+          onPush.default.outputs.effects =
+            if primaryRepo.tag != null then
+              {
+                # Only exists on tag pushes, like github-releases.
+                release = chatty "release" 5 {
+                  effectScript = ''
+                    echo "tag=${primaryRepo.tag} branch=${toString primaryRepo.branch} rev=${primaryRepo.rev}"
+                  '';
+                };
+                tag-after = chatty "tag-after" 1 { after = [ [ "default" "release" ] ]; };
+              }
+            else
+            {
             deploy = chatty "deploy" 30 { lock = "deploy"; };
             # Runs after deploy, exercising `after` hold-back.
             smoke = chatty "smoke" 5 {
