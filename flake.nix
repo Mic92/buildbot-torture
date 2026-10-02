@@ -2,7 +2,7 @@
   description = "Torture test flake for buildbot-nix UI: many builds with varied outcomes";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixbot.url = "github:Mic92/nixbot/on-event";
+  inputs.nixbot.url = "github:Mic92/nixbot/tag-push-effects";
   inputs.nixbot.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
