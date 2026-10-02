@@ -234,8 +234,28 @@
               {
                 # Only exists on tag pushes, like github-releases.
                 release = chatty "release" 5 {
+                  # Each phase leaves a line in the log.
+                  getStateScript = ''
+                    echo "phase: getState"
+                    getStateFile releases.txt
+                    echo "previous releases: $(cat releases.txt 2>/dev/null || echo none)"
+                  '';
+                  priorCheckScript = ''
+                    echo "phase: priorCheck (fails on purpose)"
+                    false
+                  '';
                   effectScript = ''
+                    echo "phase: effect"
                     echo "tag=${primaryRepo.tag} branch=${toString primaryRepo.branch} rev=${primaryRepo.rev}"
+                    echo "${primaryRepo.tag}" >> releases.txt
+                  '';
+                  putStateScript = ''
+                    echo "phase: putState"
+                    putStateFile releases.txt
+                  '';
+                  effectCheckScript = ''
+                    echo "phase: effectCheck"
+                    grep -qx "${primaryRepo.tag}" releases.txt
                   '';
                 };
                 tag-after = chatty "tag-after" 1 { after = [ [ "default" "release" ] ]; };
