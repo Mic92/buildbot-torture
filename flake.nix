@@ -248,6 +248,7 @@
                     echo "phase: effect"
                     echo "tag=${primaryRepo.tag} branch=${toString primaryRepo.branch} rev=${primaryRepo.rev}"
                     echo "${primaryRepo.tag}" >> releases.txt
+                    ${if nixpkgs.lib.hasInfix "fail" primaryRepo.tag then "echo 'failing on purpose'; exit 1" else ""}
                   '';
                   putStateScript = ''
                     echo "phase: putState"
