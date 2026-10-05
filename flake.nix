@@ -240,6 +240,19 @@
                 ]
               ];
             };
+            # when.changed: reruns only when the key file's content changes.
+            hil = chatty "hil" 3 {
+              lock = "rig";
+              when.changed.key = builtins.readFile ./hil-key.txt;
+            };
+            hil-notify = chatty "hil-notify" 1 {
+              after = [
+                [
+                  "default"
+                  "hil"
+                ]
+              ];
+            };
             broken = mkEffect {
               name = "broken";
               effectScript = ''
