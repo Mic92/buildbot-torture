@@ -2,7 +2,7 @@
   description = "Torture test flake for buildbot-nix UI: many builds with varied outcomes";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixbot.url = "github:Mic92/nixbot/tag-push-effects";
+  inputs.nixbot.url = "github:Mic92/nixbot/effect-when-changed";
   inputs.nixbot.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
@@ -270,6 +270,19 @@
                 [
                   "default"
                   "deploy"
+                ]
+              ];
+            };
+            # when.changed: reruns only when the key file's content changes.
+            hil = chatty "hil" 3 {
+              lock = "rig";
+              when.changed.key = builtins.readFile ./hil-key.txt;
+            };
+            hil-notify = chatty "hil-notify" 1 {
+              after = [
+                [
+                  "default"
+                  "hil"
                 ]
               ];
             };
