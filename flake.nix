@@ -2,7 +2,7 @@
   description = "Torture test flake for buildbot-nix UI: many builds with varied outcomes";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixbot.url = "github:Mic92/nixbot/effect-when-changed";
+  inputs.nixbot.url = "github:Mic92/nixbot/flake-update-effect";
   inputs.nixbot.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs =
@@ -14,7 +14,7 @@
     }:
     let
       fxPkgs = nixpkgs.legacyPackages.x86_64-linux;
-      inherit (nixbot.lib.effects { pkgs = fxPkgs; }) mkEffect;
+      inherit (nixbot.lib.effects { pkgs = fxPkgs; }) mkEffect flakeUpdate;
       # Effects talk a lot so the effect log viewer has something to stream.
       chatty =
         name: seconds: extra:
@@ -292,6 +292,19 @@
                 echo "about to fail" >&2
                 exit 1
               '';
+            };
+          };
+
+          # Exercises effects-lib's flakeUpdate: one PR for everything,
+          # and one PR per input.
+          onSchedule.flake-update = {
+            when.hour = [ 4 ];
+            outputs.effects = {
+              together = flakeUpdate { updateBranch = "flake-update"; };
+              per-input = flakeUpdate {
+                updateBranch = "update";
+                perInput = true;
+              };
             };
           };
 

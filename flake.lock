@@ -8,16 +8,16 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1791191027,
-        "narHash": "sha256-SQDvbR3pNg9zXCXVKfSgA5MLNAWHqrMpH60Sd4MAZPU=",
+        "lastModified": 1792956676,
+        "narHash": "sha256-9Kw9v2/jakB69j+0rfMcWXNETGyMLkOR80ifaMO9jao=",
         "owner": "Mic92",
         "repo": "nixbot",
-        "rev": "d2eda48ad4cf044b43126727839e448a6eb1c8bf",
+        "rev": "abcae1618b561965af1ca521bf4765d1946fb5b9",
         "type": "github"
       },
       "original": {
         "owner": "Mic92",
-        "ref": "effect-when-changed",
+        "ref": "flake-update-effect",
         "repo": "nixbot",
         "type": "github"
       }
