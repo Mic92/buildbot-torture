@@ -301,6 +301,13 @@
             when.hour = [ 4 ];
             outputs.effects = {
               together = flakeUpdate { updateBranch = "flake-update"; };
+              # Auto-merges once the PR build is green, on either forge.
+              auto-merge = flakeUpdate {
+                inherit (primaryRepo) forgeType;
+                updateBranch = "auto";
+                perInput = true;
+                autoMergeMethod = "squash";
+              };
               per-input = flakeUpdate {
                 updateBranch = "update";
                 perInput = true;
